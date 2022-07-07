@@ -14,7 +14,7 @@ public class SurvivorGame extends Game {
 	public static final int WIDTH = 1920;
 	public static final int HEIGHT = 1080;
 	public static final int GROUND_HEIGHT = 250;
-	public static final int SCENE_WIDTH = 3 * WIDTH / 2;
+	public static final int SCENE_WIDTH = WIDTH;
 	public static final int FONT_SIZE = 34;
 
 	public static final float GRAVITY = 2000;
@@ -36,6 +36,7 @@ public class SurvivorGame extends Game {
 	public void create() {
 		Player.create();
 		Slime.create();
+		LifeBar.create();
 
 		sky = new Texture("sky.png");
 		ground = new Texture("ground.png");
@@ -62,6 +63,7 @@ public class SurvivorGame extends Game {
 	public void dispose() {
 		Player.dispose();
 		Slime.dispose();
+		LifeBar.dispose();
 
 		batch.dispose();
 		sky.dispose();

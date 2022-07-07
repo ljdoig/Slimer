@@ -24,10 +24,11 @@ public class PlayScreen implements Screen {
         game.batch.draw(game.ground, 0, 0);
         game.batch.draw(game.ground, SurvivorGame.WIDTH, 0);
 
-        Slime.updateAll(game.batch, delta, playerX);
+        Slime.updateAll(game.batch, delta, playerX, player.getSwordCollider());
         player.update(game.batch, delta);
 
         if (SurvivorGame.DEBUG) {
+            player.debug(game);
             Slime.debug(game);
         }
 

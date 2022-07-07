@@ -8,16 +8,18 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import utils.SpriteSheet;
 
+import java.util.Iterator;
+
 public class Slime {
     private static final int FRAME_WIDTH = 32;
     private static final int FRAME_HEIGHT = 25;
     private static final int SCALE_FACTOR = 6;
     private static final int WIDTH = FRAME_WIDTH * SCALE_FACTOR;
     private static final int HEIGHT = FRAME_HEIGHT * SCALE_FACTOR;
-    private static final float COLLIDER_WIDTH = WIDTH / 2f;
+    private static final float COLLIDER_WIDTH = WIDTH / 1.5f;
     private static final float COLLIDER_HEIGHT = HEIGHT / 2f;
     private static final float COLLIDER_OFFSET = (WIDTH - COLLIDER_WIDTH) / 2;
-    private static final float SPAWN_INTERVAL = 10;
+    private static final float SPAWN_INTERVAL = 5;
     private static final float ATTACK_COOLDOWN = 1;
     private static final int HORIZONTAL_SPEED = 50;
     private static final int ATTACK_SPEED = 500;
@@ -32,10 +34,12 @@ public class Slime {
     private float directionTimer;
     private float animTimer;
     private float lastAttackTimer;
-    private float lifeTime;
+    private float lifeTimer;
     private boolean rightFacing;
     private boolean attacking;
+    private boolean spawning;
     private boolean dying;
+    private boolean dead;
 
     public Slime(float x) {
         renderPosition = new Rectangle(
@@ -47,14 +51,54 @@ public class Slime {
                 COLLIDER_WIDTH, COLLIDER_HEIGHT
         );
         velocity = new Vector2();
+        spawning = true;
+        rightFacing = MathUtils.randomBoolean();
     }
 
-    public void update(SpriteBatch batch, float delta, float playerX) {
-        lifeTime += delta;
+    public void update(SpriteBatch batch, float delta,
+                       float playerX, Rectangle swordCollider) {
+        lifeTimer += delta;
+        animTimer += delta;
         lastAttackTimer += delta;
+
+        updateMotion(delta);
+
+        assert !dead;
+        // spawning or dying behaviour; in each case return early
+        if (spawning || dying) {
+            String animation = dying ? "die" : "spawn";
+            if (animTimer > spriteSheet.getDuration(animation)) {
+                // finished with current state
+                if (spawning) {
+                    spawning = false;
+                } else {
+                    dying = false;
+                    dead = true;
+                }
+            } else {
+                TextureRegion frame = spriteSheet.getFrame(animation, animTimer);
+                if (rightFacing) frame.flip(true, false);
+                batch.draw(
+                        frame,
+                        renderPosition.x, renderPosition.y,
+                        renderPosition.width, renderPosition.height
+                );
+                if (rightFacing) frame.flip(true, false);
+            }
+            return;
+        }
+
+        // check if Slime has been struck
+        if (swordCollider != null && swordCollider.overlaps(bodyCollider)) {
+            dying = true;
+            animTimer = 0;
+            velocity.x = rightFacing ? -ATTACK_SPEED : ATTACK_SPEED;
+            return;
+        }
 
         // don't begin attack while attacking or while cooling down
         if (!attacking && lastAttackTimer > ATTACK_COOLDOWN) {
+            // attack to the left
             if (bodyCollider.x - WIDTH < playerX && playerX < bodyCollider.x) {
                 rightFacing = false;
                 velocity.x = -ATTACK_SPEED;
@@ -63,6 +107,7 @@ public class Slime {
                 directionTimer = 0;
                 lastAttackTimer = 0;
             }
+            // attack to the rights
             if (bodyCollider.x + 2 * WIDTH > playerX &&
                     playerX > bodyCollider.x + WIDTH) {
                 rightFacing = true;
@@ -101,11 +146,8 @@ public class Slime {
 
         // decide what to render
         TextureRegion renderedImage;
-        if (dying) {
-            renderedImage = spriteSheet.getFrame("die", animTimer);
-        } else if (attacking) {
+        if (attacking) {
             renderedImage = spriteSheet.getFrame("attack", animTimer);
-            animTimer += delta;
             if (animTimer > spriteSheet.getDuration("attack")) {
                 attacking = false;
             }
@@ -115,11 +157,9 @@ public class Slime {
             } else if (velocity.x < 0) {
                 renderedImage = spriteSheet.getFrame("move", -directionTimer);
             } else {
-                renderedImage = spriteSheet.getFrame("idle", lifeTime);
+                renderedImage = spriteSheet.getFrame("idle", lifeTimer);
             }
         }
-
-        updateMotion(delta);
 
         if (rightFacing) renderedImage.flip(true, false);
         batch.draw(
@@ -162,11 +202,11 @@ public class Slime {
                 FRAME_WIDTH, FRAME_HEIGHT,
                 8, 3
         );
-        spriteSheet.loadAnim("idle", 0, 4, 0.8f);
-        spriteSheet.loadAnim("move", 4, 8, 0.8f);
-        spriteSheet.loadAnim("attack", 8, 12, 0.5f);
-        spriteSheet.loadAnim("hurt", 12, 16, 0.12f);
-        spriteSheet.loadAnim("die", 16, 21, 0.12f);
+        spriteSheet.loadAnim("idle", 0.6f, 0, 4);
+        spriteSheet.loadAnim("move", 0.6f, 4, 8);
+        spriteSheet.loadAnim("die", 0.5f, 16, 17, 18, 19, 19, 20, 20);
+        spriteSheet.loadAnim("attack", 0.6f, 8, 9, 10, 10, 10, 11, 11, 12);
+        spriteSheet.loadAnim("spawn", 1f, 20, 20, 19, 19, 18, 17, 16);
 
         slimes = new Array<>();
         spawn();
@@ -184,15 +224,30 @@ public class Slime {
         slimes.add(new Slime(x));
     }
 
-    public static void updateAll(SpriteBatch batch, float delta, float playerX) {
+    public static void updateAll(SpriteBatch batch, float delta,
+                                 float playerX, Rectangle swordCollider) {
         spawnTimer += delta;
         if (spawnTimer > SPAWN_INTERVAL) {
             spawn();
             spawnTimer = 0;
         }
-        for (Slime slime : slimes) {
-            slime.update(batch, delta, playerX);
+        for (Iterator<Slime> iter = slimes.iterator(); iter.hasNext();) {
+            Slime slime = iter.next();
+            slime.update(batch, delta, playerX, swordCollider);
+            if (slime.dead) {
+                iter.remove();
+            }
         }
+    }
+
+    public static boolean collidesWithAny(Rectangle rectangle) {
+        for (Slime slime : slimes) {
+            if (!slime.dying && !slime.spawning &&
+                    slime.bodyCollider.overlaps(rectangle)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static void debug(SurvivorGame game) {

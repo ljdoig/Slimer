@@ -21,18 +21,25 @@ public class Player {
     private static final int HORIZONTAL_SPEED = 500;
     private static SpriteSheet spriteSheet;
     private static final float JUMP_VELOCITY = 800;
+    private static final float HURT_TIME_S = 0.75f;
+    private static final int HURT_FLICKERS = 3;
+    private static final int MAX_HEALTH = 5;
 
     private boolean rightFacing;
     public final Rectangle renderPosition;
-    public final Rectangle bodyCollider;
-    public final Rectangle swordCollider;
+    private final Rectangle bodyCollider;
+    private final Rectangle swordCollider;
     private final Vector2 velocity;
+    private final LifeBar lifeBar;
+    private int health;
     private float directionTimer;
     private float animTimer;
     private float totalTime;
+    private float hurtTimer;
+    private boolean hurt;
     private boolean attacking;
     private boolean jumping;
-    private boolean dying;
+    private boolean doubleJumping;
 
     public Player() {
         renderPosition = new Rectangle(
@@ -54,10 +61,19 @@ public class Player {
                 HEIGHT
         );
         velocity = new Vector2();
+        health = MAX_HEALTH;
+        lifeBar = new LifeBar(MAX_HEALTH);
     }
 
     public void update(SpriteBatch batch, float delta) {
         totalTime += delta;
+
+        lifeBar.render(batch, health);
+        updateMotion(delta);
+
+        if (Slime.collidesWithAny(bodyCollider)) {
+            takeDamage();
+        }
 
         // don't begin jump while attacking
         if (!attacking) {
@@ -65,8 +81,12 @@ public class Player {
                 attacking = true;
                 animTimer = 0;
                 directionTimer = 0;
-            } else if (!jumping && Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
-                jumping = true;
+            } else if (!doubleJumping && Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+                if (jumping) {
+                    doubleJumping = true;
+                } else {
+                    jumping = true;
+                }
                 velocity.y = JUMP_VELOCITY;
                 animTimer = 0;
                 directionTimer = 0;
@@ -126,8 +146,21 @@ public class Player {
             }
         }
 
-        updateMotion(delta);
+        if (hurt) {
+            hurtTimer += Gdx.graphics.getDeltaTime();
+            if (hurtTimer > HURT_TIME_S) {
+                hurt = false;
+            }
+            float hurtProportion = hurtTimer / HURT_TIME_S;
+            if ((hurtProportion * HURT_FLICKERS) % 1 > 0.5f) {
+                draw(batch, renderedImage);
+            }
+        } else {
+            draw(batch, renderedImage);
+        }
+    }
 
+    private void draw(SpriteBatch batch, TextureRegion renderedImage) {
         if (!rightFacing) renderedImage.flip(true, false);
         batch.draw(
                 renderedImage,
@@ -156,7 +189,7 @@ public class Player {
             }
         } else {
             // below the ground: finish jumping
-            jumping = false;
+            jumping = doubleJumping = false;
             bodyCollider.y = SurvivorGame.GROUND_HEIGHT;
             velocity.y = 0;
         }
@@ -181,8 +214,24 @@ public class Player {
 
     }
 
+    private void takeDamage() {
+        if (!hurt) {
+            health--;
+            hurt = true;
+            hurtTimer = 0;
+        }
+    }
+
+    public boolean isDead() {
+        return health == 0;
+    }
+
     public float getCentreX() {
         return renderPosition.x + WIDTH / 2f;
+    }
+
+    public Rectangle getSwordCollider() {
+        return attacking ? swordCollider : null;
     }
 
     public static void create() {
@@ -191,12 +240,12 @@ public class Player {
                 FRAME_WIDTH, FRAME_HEIGHT,
                 8, 12
         );
-        spriteSheet.loadAnim("idle", 0, 4, 0.8f);
-        spriteSheet.loadAnim("run", 8, 14, 0.8f);
-        spriteSheet.loadAnim("attack", 42, 48, 0.4f);
-        spriteSheet.loadAnim("jumpUp", 77, 79, 0.12f);
-        spriteSheet.loadAnim("jumpDown", 79, 81, 0.12f);
-        spriteSheet.loadAnim("die", 62, 69, 1.6f);
+        spriteSheet.loadAnim("idle", 0.8f, 0, 4);
+        spriteSheet.loadAnim("run", 0.8f, 8, 14);
+        spriteSheet.loadAnim("attack", 0.25f, 42, 48);
+        spriteSheet.loadAnim("jumpUp", 0.12f, 77, 79);
+        spriteSheet.loadAnim("jumpDown", 0.12f, 79, 81);
+        spriteSheet.loadAnim("die", 1.6f, 62, 69);
     }
 
     public static void dispose() {
@@ -211,4 +260,5 @@ public class Player {
             game.drawRedRectangle(bodyCollider);
         }
     }
+
 }

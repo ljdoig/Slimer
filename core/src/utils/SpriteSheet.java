@@ -12,7 +12,6 @@ public class SpriteSheet {
     private final int widthInFrames;
     private final int heightInFrames;
     private final HashMap<String, Animation<TextureRegion>> animDict;
-    private final HashMap<String, TextureRegion> frameDict;
 
     public SpriteSheet(String sheetLocation, int tileWidth, int tileHeight,
                        int widthInFrames, int heightInFrames) {
@@ -21,14 +20,25 @@ public class SpriteSheet {
         this.widthInFrames = widthInFrames;
         this.heightInFrames = heightInFrames;
         animDict = new HashMap<>();
-        frameDict = new HashMap<>();
     }
 
-    public void loadAnim(String name, int startIndex, int endIndex, float duration) {
+    public void loadAnim(String name, float duration, int startIndex, int endIndex) {
         int framesAdded = 0, row, col;
         TextureRegion[] frames = new TextureRegion[endIndex - startIndex];
         assert endIndex < widthInFrames * heightInFrames;
         for (int frameIndex = startIndex; frameIndex < endIndex; frameIndex++) {
+            row = frameIndex / widthInFrames;
+            col = frameIndex % widthInFrames;
+            frames[framesAdded++] = sheetArray[row][col];
+        }
+        animDict.put(name, new Animation<>(duration / framesAdded, frames));
+    }
+
+    public void loadAnim(String name, float duration, int... frameIndices) {
+        int framesAdded = 0, row, col;
+        TextureRegion[] frames = new TextureRegion[frameIndices.length];
+        for (int frameIndex : frameIndices) {
+            System.out.println(frameIndex);
             row = frameIndex / widthInFrames;
             col = frameIndex % widthInFrames;
             frames[framesAdded++] = sheetArray[row][col];
