@@ -35,6 +35,7 @@ public class SurvivorGame extends Game {
 	@Override
 	public void create() {
 		Player.create();
+		Slime.create();
 
 		sky = new Texture("sky.png");
 		ground = new Texture("ground.png");
@@ -60,6 +61,7 @@ public class SurvivorGame extends Game {
 	@Override
 	public void dispose() {
 		Player.dispose();
+		Slime.dispose();
 
 		batch.dispose();
 		sky.dispose();

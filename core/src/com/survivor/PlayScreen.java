@@ -17,15 +17,20 @@ public class PlayScreen implements Screen {
         game.updateCamera(playerX);
 
         game.batch.begin();
+
         // sky should appear stationary so draw relative to camera
         game.batch.draw(game.sky, game.camera.position.x - SurvivorGame.WIDTH / 2f, 0);
         // ground should appear to move under player, covers multiple 'grounds'
         game.batch.draw(game.ground, 0, 0);
         game.batch.draw(game.ground, SurvivorGame.WIDTH, 0);
+
+        Slime.updateAll(game.batch, delta, playerX);
         player.update(game.batch, delta);
+
         if (SurvivorGame.DEBUG) {
-            player.debug(game);
+            Slime.debug(game);
         }
+
         game.batch.end();
     }
 

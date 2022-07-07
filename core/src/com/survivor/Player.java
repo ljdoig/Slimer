@@ -32,6 +32,7 @@ public class Player {
     private float totalTime;
     private boolean attacking;
     private boolean jumping;
+    private boolean dying;
 
     public Player() {
         renderPosition = new Rectangle(
@@ -81,7 +82,7 @@ public class Player {
                     rightFacing = true;
                 }
                 // Used to update run animation frame
-                directionTimer += Gdx.graphics.getDeltaTime();
+                directionTimer += delta;
             } else if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
                 velocity.x = -HORIZONTAL_SPEED;
                 // Update direction
@@ -90,7 +91,7 @@ public class Player {
                     rightFacing = false;
                 }
                 // Used to update run animation frame
-                directionTimer -= Gdx.graphics.getDeltaTime();
+                directionTimer -= delta;
             } else {
                 directionTimer = 0;
                 velocity.x = 0;
@@ -195,6 +196,7 @@ public class Player {
         spriteSheet.loadAnim("attack", 42, 48, 0.4f);
         spriteSheet.loadAnim("jumpUp", 77, 79, 0.12f);
         spriteSheet.loadAnim("jumpDown", 79, 81, 0.12f);
+        spriteSheet.loadAnim("die", 62, 69, 1.6f);
     }
 
     public static void dispose() {
