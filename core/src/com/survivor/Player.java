@@ -4,20 +4,29 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import utils.SpriteSheet;
 
 public class Player {
-    private static final int WIDTH = 50;
-    private static final int HEIGHT = 37;
-    private static final int HORIZONTAL_SPEED = 500;
+    private static final int FRAME_WIDTH = 50;
+    private static final int FRAME_HEIGHT = 37;
     private static final int SCALE_FACTOR = 6;
+    private static final int WIDTH = FRAME_WIDTH * SCALE_FACTOR;
+    private static final int HEIGHT = FRAME_HEIGHT * SCALE_FACTOR;
+    private static final float COLLIDER_WIDTH = WIDTH / 2.5f;
+    private static final float COLLIDER_HEIGHT = HEIGHT * 0.8f;
+    private static final float COLLIDER_OFFSET = (WIDTH - COLLIDER_WIDTH) / 2;
+
+    private static final int HORIZONTAL_SPEED = 500;
     private static SpriteSheet spriteSheet;
     private static final float JUMP_VELOCITY = 800;
 
     private boolean rightFacing;
-    public Vector2 position;
-    private Vector2 velocity;
+    public final Rectangle renderPosition;
+    public final Rectangle bodyCollider;
+    public final Rectangle swordCollider;
+    private final Vector2 velocity;
     private float directionTimer;
     private float animTimer;
     private float totalTime;
@@ -25,9 +34,23 @@ public class Player {
     private boolean jumping;
 
     public Player() {
-        position = new Vector2(
-                (SurvivorGame.WIDTH - WIDTH * SCALE_FACTOR) / 2f,
-                SurvivorGame.GROUND_HEIGHT
+        renderPosition = new Rectangle(
+                (SurvivorGame.SCENE_WIDTH - WIDTH) / 2f,
+                SurvivorGame.GROUND_HEIGHT,
+                WIDTH,
+                HEIGHT
+        );
+        bodyCollider = new Rectangle(
+                (SurvivorGame.SCENE_WIDTH - COLLIDER_WIDTH) / 2f,
+                SurvivorGame.GROUND_HEIGHT,
+                COLLIDER_WIDTH,
+                COLLIDER_HEIGHT
+        );
+        swordCollider = new Rectangle(
+                (SurvivorGame.SCENE_WIDTH - WIDTH) / 2f,
+                SurvivorGame.GROUND_HEIGHT,
+                COLLIDER_OFFSET,
+                HEIGHT
         );
         velocity = new Vector2();
     }
@@ -73,8 +96,8 @@ public class Player {
                 velocity.x = 0;
             }
         }
-        updateMotion(delta);
 
+        // decide what to render
         TextureRegion renderedImage;
         if (attacking) {
             renderedImage = spriteSheet.getFrame("attack", animTimer);
@@ -101,32 +124,26 @@ public class Player {
                 renderedImage = spriteSheet.getFrame("idle", totalTime);
             }
         }
-        if (position.y < SurvivorGame.GROUND_HEIGHT) {
-            jumping = false;
-            position.y = SurvivorGame.GROUND_HEIGHT;
-            velocity.y = 0;
-        }
+
+        updateMotion(delta);
 
         if (!rightFacing) renderedImage.flip(true, false);
         batch.draw(
                 renderedImage,
-                position.x,
-                position.y,
-                WIDTH * SCALE_FACTOR,
-                HEIGHT * SCALE_FACTOR
+                renderPosition.x, renderPosition.y,
+                renderPosition.width, renderPosition.height
         );
         if (!rightFacing) renderedImage.flip(true, false);
     }
 
     private void updateMotion(float delta) {
-        position.x += velocity.x * delta;
-        position.y += velocity.y * delta;
-        // apply gravity if in the air
-        if (position.y > SurvivorGame.GROUND_HEIGHT) {
+        bodyCollider.x += velocity.x * delta;
+        bodyCollider.y += velocity.y * delta;
+        if (bodyCollider.y > SurvivorGame.GROUND_HEIGHT) {
+            // in the air: apply gravity
             velocity.y -= SurvivorGame.GRAVITY * delta;
-        }
-        // apply friction in opposite direction to motion
-        if (position.y == SurvivorGame.GROUND_HEIGHT) {
+        } else if (bodyCollider.y == SurvivorGame.GROUND_HEIGHT) {
+            // on the ground: apply friction in opposite direction to motion
             if (velocity.x > 0) {
                 velocity.x -= SurvivorGame.FRICTION * delta;
                 // check we don't flip the sign
@@ -136,17 +153,42 @@ public class Player {
                 // check we don't flip the sign
                 if (velocity.x > 0) velocity.x = 0;
             }
+        } else {
+            // below the ground: finish jumping
+            jumping = false;
+            bodyCollider.y = SurvivorGame.GROUND_HEIGHT;
+            velocity.y = 0;
         }
+        if (bodyCollider.x < 0) {
+            bodyCollider.x = 0;
+        }
+        if (bodyCollider.x > SurvivorGame.SCENE_WIDTH - bodyCollider.width) {
+            bodyCollider.x = SurvivorGame.SCENE_WIDTH - bodyCollider.width;
+        }
+
+        renderPosition.x = bodyCollider.x - COLLIDER_OFFSET;
+        renderPosition.y = bodyCollider.y;
+
+        if (attacking) {
+            if (rightFacing) {
+                swordCollider.x = bodyCollider.x + bodyCollider.width;
+            } else {
+                swordCollider.x = bodyCollider.x - swordCollider.width;
+            }
+            swordCollider.y = bodyCollider.y;
+        }
+
     }
 
-
     public float getCentreX() {
-        return position.x + WIDTH * SCALE_FACTOR / 2f;
+        return renderPosition.x + WIDTH / 2f;
     }
 
     public static void create() {
         spriteSheet = new SpriteSheet(
-                "adventurer.png", WIDTH, HEIGHT, 8, 12
+                "adventurer.png",
+                FRAME_WIDTH, FRAME_HEIGHT,
+                8, 12
         );
         spriteSheet.loadAnim("idle", 0, 4, 0.8f);
         spriteSheet.loadAnim("run", 8, 14, 0.8f);
@@ -159,4 +201,12 @@ public class Player {
         spriteSheet.dispose();
     }
 
+    public void debug(SurvivorGame game) {
+        if (attacking) {
+            game.drawRedRectangle(swordCollider);
+        } else {
+            game.drawRedRectangle(renderPosition);
+            game.drawRedRectangle(bodyCollider);
+        }
+    }
 }

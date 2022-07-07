@@ -19,14 +19,13 @@ public class PlayScreen implements Screen {
         game.batch.begin();
         // sky should appear stationary so draw relative to camera
         game.batch.draw(game.sky, game.camera.position.x - SurvivorGame.WIDTH / 2f, 0);
-        // ground should appear to move under player
-        int nearestGround = Math.floorDiv((int) playerX, SurvivorGame.WIDTH);
-        // draw ground under player
-        game.batch.draw(game.ground, nearestGround * SurvivorGame.WIDTH, 0);
-        // and ground to the left and right of this to cover the screen
-        game.batch.draw(game.ground, (nearestGround + 1) * SurvivorGame.WIDTH, 0);
-        game.batch.draw(game.ground, (nearestGround - 1) * SurvivorGame.WIDTH, 0);
+        // ground should appear to move under player, covers multiple 'grounds'
+        game.batch.draw(game.ground, 0, 0);
+        game.batch.draw(game.ground, SurvivorGame.WIDTH, 0);
         player.update(game.batch, delta);
+        if (SurvivorGame.DEBUG) {
+            player.debug(game);
+        }
         game.batch.end();
     }
 
