@@ -139,12 +139,19 @@ public class Player {
                 attacking = false;
             }
         } else if (jumping) {
-            if (velocity.y > 0) {
-                renderedImage = spriteSheet.getFrame("jumpUp", animTimer);
+            if (doubleJumping) {
+                renderedImage = spriteSheet.getFrame("flip", animTimer);
+                if (animTimer > spriteSheet.getDuration("flip")) {
+                    doubleJumping = false;
+                }
             } else {
-                renderedImage = spriteSheet.getFrame("jumpDown", animTimer);
-                if (!renderedImage.isFlipX()) {
-                    renderedImage.flip(true, false);
+                if (velocity.y > 0) {
+                    renderedImage = spriteSheet.getFrame("jumpUp", animTimer);
+                } else {
+                    renderedImage = spriteSheet.getFrame("jumpDown", animTimer);
+                    if (!renderedImage.isFlipX()) {
+                        renderedImage.flip(true, false);
+                    }
                 }
             }
         } else {
@@ -264,6 +271,7 @@ public class Player {
         spriteSheet.loadAnim("idle", 0.8f, 0, 4);
         spriteSheet.loadAnim("run", 0.8f, 8, 14);
         spriteSheet.loadAnim("attack", 0.3f, 42, 48);
+        spriteSheet.loadAnim("flip", 0.3f, 16, 23);
         spriteSheet.loadAnim("jumpUp", 0.12f, 77, 79);
         spriteSheet.loadAnim("jumpDown", 0.12f, 79, 81);
         spriteSheet.loadAnim(

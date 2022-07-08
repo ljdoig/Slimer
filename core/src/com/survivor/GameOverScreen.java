@@ -35,14 +35,14 @@ public class GameOverScreen implements Screen {
                 SurvivorGame.HEIGHT * 14 / 16f
         );
         game.drawCentredText(
-                String.format("SCORE: %d    HIGH SCORE: %d", score, highScore),
+                String.format("SCORE: %d   HIGH SCORE: %d", score, highScore),
                 SurvivorGame.WIDTH / 2f,
                 SurvivorGame.HEIGHT * 13 / 16f
         );
         game.drawCentredText(
                 "Press ENTER to play again",
                 SurvivorGame.WIDTH / 2f,
-                SurvivorGame.HEIGHT * 12 / 16f
+                SurvivorGame.HEIGHT * 11 / 16f
         );
 
         if (Gdx.input.isKeyPressed(Input.Keys.ENTER)) {

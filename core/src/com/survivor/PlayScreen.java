@@ -31,11 +31,13 @@ public class PlayScreen implements Screen {
         Slime.updateAll(game.batch, delta, player);
         player.update(game.batch, delta, game.camera.position.x, false);
 
-        game.drawCentredText(
-                String.format("Score: %d", Slime.getDeadSlimeCount()),
-                SurvivorGame.WIDTH * 0.9f,
-                SurvivorGame.HEIGHT * 0.9f
-        );
+        if (!player.isDying()) {
+            game.drawCentredText(
+                    String.format("Score: %d", Slime.getDeadSlimeCount()),
+                    SurvivorGame.WIDTH * 0.9f,
+                    SurvivorGame.HEIGHT * 0.915f
+            );
+        }
 
         if (SurvivorGame.DEBUG) {
             player.debug(game);

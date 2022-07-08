@@ -20,7 +20,7 @@ public class SurvivorGame extends Game {
 	public static final float GRAVITY = 2000;
 	public static final float FRICTION = 1200;
 
-	public static final boolean DEBUG = true;
+	public static final boolean DEBUG = false;
 
 	public Texture sky;
 	public Texture ground;
