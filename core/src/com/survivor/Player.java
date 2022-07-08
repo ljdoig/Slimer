@@ -40,6 +40,7 @@ public class Player {
     private boolean attacking;
     private boolean jumping;
     private boolean doubleJumping;
+    private boolean doubleJumped;
     private boolean hurt;
     private boolean dying;
     private boolean dead;
@@ -94,9 +95,10 @@ public class Player {
                 attacking = true;
                 animTimer = 0;
                 directionTimer = 0;
-            } else if (!doubleJumping && Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+            } else if (!doubleJumped && Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
                 if (jumping) {
                     doubleJumping = true;
+                    doubleJumped = true;
                 } else {
                     jumping = true;
                 }
@@ -143,6 +145,7 @@ public class Player {
                 renderedImage = spriteSheet.getFrame("flip", animTimer);
                 if (animTimer > spriteSheet.getDuration("flip")) {
                     doubleJumping = false;
+                    doubleJumped = true;
                 }
             } else {
                 if (velocity.y > 0) {
@@ -207,7 +210,7 @@ public class Player {
             }
         } else {
             // below the ground: finish jumping
-            jumping = doubleJumping = false;
+            jumping = doubleJumping = doubleJumped = false;
             bodyCollider.y = SurvivorGame.GROUND_HEIGHT;
             velocity.y = 0;
         }

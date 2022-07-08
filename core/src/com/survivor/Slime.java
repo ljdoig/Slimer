@@ -21,7 +21,7 @@ public class Slime {
     private static final float COLLIDER_OFFSET = (WIDTH - COLLIDER_WIDTH) / 2;
     private static final float ATTACK_COOLDOWN = 1;
     private static final int HORIZONTAL_SPEED = 75;
-    private static final int ATTACK_SPEED = 750;
+    private static final int ATTACK_SPEED = 600;
     private static final int RECOIL_SPEED = 750;
     private static final float DEFAULT_SPAWN_INTERVAL = 5;
     private static int deadSlimeCount = 0;
