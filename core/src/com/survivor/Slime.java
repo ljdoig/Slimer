@@ -23,8 +23,9 @@ public class Slime {
     private static final int HORIZONTAL_SPEED = 75;
     private static final int ATTACK_SPEED = 750;
     private static final int RECOIL_SPEED = 750;
+    private static final float DEFAULT_SPAWN_INTERVAL = 5;
     private static int deadSlimeCount = 0;
-    private static float spawnInterval = 5;
+    private static float spawnInterval = DEFAULT_SPAWN_INTERVAL;
     private static SpriteSheet spriteSheet;
 
     private static Array<Slime> slimes;
@@ -220,6 +221,8 @@ public class Slime {
     }
 
     public static void reset(float firstSlimeX) {
+        spawnInterval = DEFAULT_SPAWN_INTERVAL;
+        deadSlimeCount = 0;
         slimes = new Array<>();
         spawn(firstSlimeX);
     }
@@ -233,19 +236,19 @@ public class Slime {
                 COLLIDER_OFFSET,
                 SurvivorGame.SCENE_WIDTH - COLLIDER_WIDTH
         );
-        slimes.add(new Slime(x));
+        spawn(x);
     }
 
     public static void spawn(float x) {
         slimes.add(new Slime(x));
+        spawnInterval *= 0.95;
+        spawnTimer = 0;
     }
 
     public static void updateAll(SpriteBatch batch, float delta, Player player) {
         spawnTimer += delta;
         if (spawnTimer > spawnInterval && !player.isDying()) {
             spawn();
-            spawnInterval *= 0.95;
-            spawnTimer = 0;
         }
         for (Iterator<Slime> iter = slimes.iterator(); iter.hasNext();) {
             Slime slime = iter.next();

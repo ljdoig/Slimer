@@ -270,10 +270,13 @@ public class Player {
         );
         spriteSheet.loadAnim("idle", 0.8f, 0, 4);
         spriteSheet.loadAnim("run", 0.8f, 8, 14);
-        spriteSheet.loadAnim("attack", 0.3f, 42, 48);
         spriteSheet.loadAnim("flip", 0.3f, 16, 23);
         spriteSheet.loadAnim("jumpUp", 0.12f, 77, 79);
         spriteSheet.loadAnim("jumpDown", 0.12f, 79, 81);
+        spriteSheet.loadAnim(
+                "attack", 0.3f,
+                42, 43, 44, 44, 45, 46, 47
+        );
         spriteSheet.loadAnim(
                 "die", 4f,
                 62, 63, 64, 65, 66, 67, 68, 66, 67, 68, 68, 68, 68
