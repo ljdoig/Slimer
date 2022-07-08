@@ -25,19 +25,21 @@ public class LifeBar {
         EMPTY_HEART.dispose();
     }
 
-    public void render(SpriteBatch batch, int health) {
+    public void render(SpriteBatch batch, int health, float cameraX) {
         int i = 0;
-        for (; i < health; i++) {
+        for (;i < health;i++) {
             batch.draw(
                     HEART,
-                    FIRST_HEART_X + i * GAP - HEART.getWidth() / 2f,
+                    cameraX - SurvivorGame.WIDTH / 2f +
+                            FIRST_HEART_X + i * GAP - HEART.getWidth() / 2f,
                     Y - HEART.getHeight() / 2f
             );
         }
-        for (; i < maxHealth; i++) {
+        for (;i < maxHealth;i++) {
             batch.draw(
                     EMPTY_HEART,
-                    FIRST_HEART_X + i * GAP - HEART.getWidth() / 2f,
+                    cameraX - SurvivorGame.WIDTH / 2f +
+                            FIRST_HEART_X + i * GAP - HEART.getWidth() / 2f,
                     Y - HEART.getHeight() / 2f
             );
         }

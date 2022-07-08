@@ -38,7 +38,6 @@ public class SpriteSheet {
         int framesAdded = 0, row, col;
         TextureRegion[] frames = new TextureRegion[frameIndices.length];
         for (int frameIndex : frameIndices) {
-            System.out.println(frameIndex);
             row = frameIndex / widthInFrames;
             col = frameIndex % widthInFrames;
             frames[framesAdded++] = sheetArray[row][col];

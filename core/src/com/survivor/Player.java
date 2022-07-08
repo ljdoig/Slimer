@@ -14,19 +14,20 @@ public class Player {
     private static final int SCALE_FACTOR = 6;
     private static final int WIDTH = FRAME_WIDTH * SCALE_FACTOR;
     private static final int HEIGHT = FRAME_HEIGHT * SCALE_FACTOR;
-    private static final float COLLIDER_WIDTH = WIDTH / 2.5f;
-    private static final float COLLIDER_HEIGHT = HEIGHT * 0.8f;
-    private static final float COLLIDER_OFFSET = (WIDTH - COLLIDER_WIDTH) / 2;
+    private static final float BODY_COLLIDER_WIDTH = WIDTH / 3f;
+    private static final float BODY_COLLIDER_HEIGHT = HEIGHT * 0.8f;
+    private static final float BODY_COLLIDER_OFFSET = (WIDTH - BODY_COLLIDER_WIDTH)/2;
+    private static final float SWORD_COLLIDER_WIDTH = BODY_COLLIDER_OFFSET*0.9f;
 
     private static final int HORIZONTAL_SPEED = 500;
     private static SpriteSheet spriteSheet;
     private static final float JUMP_VELOCITY = 800;
-    private static final float HURT_TIME_S = 0.75f;
+    private static final float HURT_TIME_S = 1f;
     private static final int HURT_FLICKERS = 3;
-    private static final int MAX_HEALTH = 5;
+    private static final int MAX_HEALTH = 3;
 
     private boolean rightFacing;
-    public final Rectangle renderPosition;
+    private final Rectangle renderPosition;
     private final Rectangle bodyCollider;
     private final Rectangle swordCollider;
     private final Vector2 velocity;
@@ -36,47 +37,59 @@ public class Player {
     private float animTimer;
     private float totalTime;
     private float hurtTimer;
-    private boolean hurt;
     private boolean attacking;
     private boolean jumping;
     private boolean doubleJumping;
+    private boolean hurt;
+    private boolean dying;
+    private boolean dead;
 
-    public Player() {
+    public Player(float x) {
         renderPosition = new Rectangle(
-                (SurvivorGame.SCENE_WIDTH - WIDTH) / 2f,
+                x,
                 SurvivorGame.GROUND_HEIGHT,
                 WIDTH,
                 HEIGHT
         );
         bodyCollider = new Rectangle(
-                (SurvivorGame.SCENE_WIDTH - COLLIDER_WIDTH) / 2f,
-                SurvivorGame.GROUND_HEIGHT,
-                COLLIDER_WIDTH,
-                COLLIDER_HEIGHT
+                renderPosition.x + BODY_COLLIDER_OFFSET,
+                renderPosition.y,
+                BODY_COLLIDER_WIDTH,
+                BODY_COLLIDER_HEIGHT
         );
-        swordCollider = new Rectangle(
-                (SurvivorGame.SCENE_WIDTH - WIDTH) / 2f,
-                SurvivorGame.GROUND_HEIGHT,
-                COLLIDER_OFFSET,
-                HEIGHT
-        );
+        swordCollider = new Rectangle(0, 0, SWORD_COLLIDER_WIDTH, HEIGHT);
         velocity = new Vector2();
         health = MAX_HEALTH;
         lifeBar = new LifeBar(MAX_HEALTH);
     }
 
-    public void update(SpriteBatch batch, float delta) {
-        totalTime += delta;
+    public Player() {
+        this((SurvivorGame.SCENE_WIDTH - WIDTH) / 2f);
+    }
 
-        lifeBar.render(batch, health);
+    public void update(SpriteBatch batch, float delta, float cameraX, boolean _static) {
+        totalTime += delta;
+        animTimer += delta;
+
         updateMotion(delta);
+
+        if (dying) {
+            if (animTimer > spriteSheet.getDuration("die")) {
+                dead = true;
+            } else {
+                draw(batch, spriteSheet.getFrame("die", animTimer));
+            }
+            return;
+        }
+
+        if (!_static) lifeBar.render(batch, health, cameraX);
 
         if (Slime.collidesWithAny(bodyCollider)) {
             takeDamage();
         }
 
         // don't begin jump while attacking
-        if (!attacking) {
+        if (!_static && !attacking) {
             if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
                 attacking = true;
                 animTimer = 0;
@@ -93,7 +106,7 @@ public class Player {
             }
         }
         // don't allow movement while attacking
-        if (!attacking) {
+        if (!attacking && !_static) {
             if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
                 velocity.x = HORIZONTAL_SPEED;
                 // Update direction
@@ -122,7 +135,6 @@ public class Player {
         TextureRegion renderedImage;
         if (attacking) {
             renderedImage = spriteSheet.getFrame("attack", animTimer);
-            animTimer += delta;
             if (animTimer > spriteSheet.getDuration("attack")) {
                 attacking = false;
             }
@@ -135,7 +147,6 @@ public class Player {
                     renderedImage.flip(true, false);
                 }
             }
-            animTimer += delta;
         } else {
             if (velocity.x > 0) {
                 renderedImage = spriteSheet.getFrame("run", directionTimer);
@@ -200,7 +211,7 @@ public class Player {
             bodyCollider.x = SurvivorGame.SCENE_WIDTH - bodyCollider.width;
         }
 
-        renderPosition.x = bodyCollider.x - COLLIDER_OFFSET;
+        renderPosition.x = bodyCollider.x - BODY_COLLIDER_OFFSET;
         renderPosition.y = bodyCollider.y;
 
         if (attacking) {
@@ -219,19 +230,29 @@ public class Player {
             health--;
             hurt = true;
             hurtTimer = 0;
+            if (health == 0) {
+                dying = true;
+                animTimer = 0;
+            }
         }
     }
 
+    public boolean isDying() {
+        return dying;
+    }
+
     public boolean isDead() {
-        return health == 0;
+        return dead;
     }
 
     public float getCentreX() {
-        return renderPosition.x + WIDTH / 2f;
+        return renderPosition.x + renderPosition.width / 2f;
     }
 
     public Rectangle getSwordCollider() {
-        return attacking ? swordCollider : null;
+        float attackProportion = animTimer / spriteSheet.getDuration("attack");
+        boolean swordOut = 0.25 < attackProportion && attackProportion < 0.5;
+        return attacking && swordOut ? swordCollider : null;
     }
 
     public static void create() {
@@ -242,10 +263,13 @@ public class Player {
         );
         spriteSheet.loadAnim("idle", 0.8f, 0, 4);
         spriteSheet.loadAnim("run", 0.8f, 8, 14);
-        spriteSheet.loadAnim("attack", 0.25f, 42, 48);
+        spriteSheet.loadAnim("attack", 0.3f, 42, 48);
         spriteSheet.loadAnim("jumpUp", 0.12f, 77, 79);
         spriteSheet.loadAnim("jumpDown", 0.12f, 79, 81);
-        spriteSheet.loadAnim("die", 1.6f, 62, 69);
+        spriteSheet.loadAnim(
+                "die", 4f,
+                62, 63, 64, 65, 66, 67, 68, 66, 67, 68, 68, 68, 68
+        );
     }
 
     public static void dispose() {
@@ -253,10 +277,9 @@ public class Player {
     }
 
     public void debug(SurvivorGame game) {
-        if (attacking) {
+        if (getSwordCollider() != null) {
             game.drawRedRectangle(swordCollider);
         } else {
-            game.drawRedRectangle(renderPosition);
             game.drawRedRectangle(bodyCollider);
         }
     }

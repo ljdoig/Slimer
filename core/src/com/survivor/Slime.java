@@ -19,10 +19,12 @@ public class Slime {
     private static final float COLLIDER_WIDTH = WIDTH / 1.5f;
     private static final float COLLIDER_HEIGHT = HEIGHT / 2f;
     private static final float COLLIDER_OFFSET = (WIDTH - COLLIDER_WIDTH) / 2;
-    private static final float SPAWN_INTERVAL = 5;
     private static final float ATTACK_COOLDOWN = 1;
-    private static final int HORIZONTAL_SPEED = 50;
-    private static final int ATTACK_SPEED = 500;
+    private static final int HORIZONTAL_SPEED = 75;
+    private static final int ATTACK_SPEED = 750;
+    private static final int RECOIL_SPEED = 750;
+    private static int deadSlimeCount = 0;
+    private static float spawnInterval = 5;
     private static SpriteSheet spriteSheet;
 
     private static Array<Slime> slimes;
@@ -55,8 +57,7 @@ public class Slime {
         rightFacing = MathUtils.randomBoolean();
     }
 
-    public void update(SpriteBatch batch, float delta,
-                       float playerX, Rectangle swordCollider) {
+    public void update(SpriteBatch batch, float delta, Player player) {
         lifeTimer += delta;
         animTimer += delta;
         lastAttackTimer += delta;
@@ -89,14 +90,20 @@ public class Slime {
         }
 
         // check if Slime has been struck
-        if (swordCollider != null && swordCollider.overlaps(bodyCollider)) {
+        Rectangle swordCollider = player.getSwordCollider();
+        if ((swordCollider != null && swordCollider.overlaps(bodyCollider)) ||
+                player.isDying()) {
             dying = true;
             animTimer = 0;
-            velocity.x = rightFacing ? -ATTACK_SPEED : ATTACK_SPEED;
+            if (!player.isDying()) {
+                deadSlimeCount++;
+                velocity.x = rightFacing ? -RECOIL_SPEED : RECOIL_SPEED;
+            }
             return;
         }
 
         // don't begin attack while attacking or while cooling down
+        float playerX = player.getCentreX();
         if (!attacking && lastAttackTimer > ATTACK_COOLDOWN) {
             // attack to the left
             if (bodyCollider.x - WIDTH < playerX && playerX < bodyCollider.x) {
@@ -204,12 +211,17 @@ public class Slime {
         );
         spriteSheet.loadAnim("idle", 0.6f, 0, 4);
         spriteSheet.loadAnim("move", 0.6f, 4, 8);
-        spriteSheet.loadAnim("die", 0.5f, 16, 17, 18, 19, 19, 20, 20);
+        spriteSheet.loadAnim("die", 0.4f, 16, 17, 18, 19, 19, 20, 20);
         spriteSheet.loadAnim("attack", 0.6f, 8, 9, 10, 10, 10, 11, 11, 12);
         spriteSheet.loadAnim("spawn", 1f, 20, 20, 19, 19, 18, 17, 16);
 
         slimes = new Array<>();
         spawn();
+    }
+
+    public static void reset(float firstSlimeX) {
+        slimes = new Array<>();
+        spawn(firstSlimeX);
     }
 
     public static void dispose() {
@@ -224,16 +236,20 @@ public class Slime {
         slimes.add(new Slime(x));
     }
 
-    public static void updateAll(SpriteBatch batch, float delta,
-                                 float playerX, Rectangle swordCollider) {
+    public static void spawn(float x) {
+        slimes.add(new Slime(x));
+    }
+
+    public static void updateAll(SpriteBatch batch, float delta, Player player) {
         spawnTimer += delta;
-        if (spawnTimer > SPAWN_INTERVAL) {
+        if (spawnTimer > spawnInterval && !player.isDying()) {
             spawn();
+            spawnInterval *= 0.95;
             spawnTimer = 0;
         }
         for (Iterator<Slime> iter = slimes.iterator(); iter.hasNext();) {
             Slime slime = iter.next();
-            slime.update(batch, delta, playerX, swordCollider);
+            slime.update(batch, delta, player);
             if (slime.dead) {
                 iter.remove();
             }
@@ -252,8 +268,12 @@ public class Slime {
 
     public static void debug(SurvivorGame game) {
         for (Slime slime : slimes) {
-            game.drawRedRectangle(slime.renderPosition);
             game.drawRedRectangle(slime.bodyCollider);
         }
     }
+
+    public static int getDeadSlimeCount() {
+        return deadSlimeCount;
+    }
+
 }

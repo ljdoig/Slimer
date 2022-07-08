@@ -14,13 +14,13 @@ public class SurvivorGame extends Game {
 	public static final int WIDTH = 1920;
 	public static final int HEIGHT = 1080;
 	public static final int GROUND_HEIGHT = 250;
-	public static final int SCENE_WIDTH = WIDTH;
+	public static final int SCENE_WIDTH = 3 * WIDTH / 2;
 	public static final int FONT_SIZE = 34;
 
 	public static final float GRAVITY = 2000;
 	public static final float FRICTION = 1200;
 
-	public static final boolean DEBUG = false;
+	public static final boolean DEBUG = true;
 
 	public Texture sky;
 	public Texture ground;
@@ -49,7 +49,7 @@ public class SurvivorGame extends Game {
 		glyphLayout = new GlyphLayout();
 		font = FontLoader.load("Lotuscoder.ttf", FONT_SIZE);
 
-		setScreen(new PlayScreen(this));
+		setScreen(new MenuScreen(this));
 
 		redRect = new Texture("rect.png");
 	}
@@ -91,8 +91,10 @@ public class SurvivorGame extends Game {
 		font.draw(
 				batch,
 				glyphLayout,
-				x - glyphLayout.width / 2,
-				y + glyphLayout.height / 2
+				camera.position.x - WIDTH / 2f +
+						x - glyphLayout.width / 2,
+				camera.position.y - HEIGHT / 2f +
+						y + glyphLayout.height / 2
 		);
 	}
 
@@ -105,4 +107,6 @@ public class SurvivorGame extends Game {
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);
 	}
+
+
 }

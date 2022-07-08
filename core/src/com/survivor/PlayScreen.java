@@ -1,6 +1,7 @@
 package com.survivor;
 
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.math.MathUtils;
 
 public class PlayScreen implements Screen {
     private final SurvivorGame game;
@@ -9,6 +10,9 @@ public class PlayScreen implements Screen {
     public PlayScreen(SurvivorGame game) {
         this.game = game;
         player = new Player();
+        Slime.reset(player.getCentreX() + SurvivorGame.WIDTH / 4f *
+                (MathUtils.randomBoolean() ? 1 : -1)
+        );
     }
 
     @Override
@@ -24,8 +28,14 @@ public class PlayScreen implements Screen {
         game.batch.draw(game.ground, 0, 0);
         game.batch.draw(game.ground, SurvivorGame.WIDTH, 0);
 
-        Slime.updateAll(game.batch, delta, playerX, player.getSwordCollider());
-        player.update(game.batch, delta);
+        Slime.updateAll(game.batch, delta, player);
+        player.update(game.batch, delta, game.camera.position.x, false);
+
+        game.drawCentredText(
+                String.format("Score: %d", Slime.getDeadSlimeCount()),
+                SurvivorGame.WIDTH * 0.9f,
+                SurvivorGame.HEIGHT * 0.9f
+        );
 
         if (SurvivorGame.DEBUG) {
             player.debug(game);
@@ -33,6 +43,10 @@ public class PlayScreen implements Screen {
         }
 
         game.batch.end();
+
+        if (player.isDead()) {
+            game.setScreen(new GameOverScreen(game, playerX, Slime.getDeadSlimeCount()));
+        }
     }
 
     @Override
